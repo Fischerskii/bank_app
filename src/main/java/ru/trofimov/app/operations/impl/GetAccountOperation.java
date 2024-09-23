@@ -11,7 +11,6 @@ import java.util.Scanner;
 
 @Component
 public class GetAccountOperation implements Operation {
-
     private final AccountService accountService;
 
     @Autowired
