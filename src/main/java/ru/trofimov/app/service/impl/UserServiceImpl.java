@@ -8,7 +8,6 @@ import ru.trofimov.app.exceptions.UserNotFoundException;
 import ru.trofimov.app.service.AccountService;
 import ru.trofimov.app.service.UserService;
 
-import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,11 +47,6 @@ public class UserServiceImpl implements UserService {
         } else {
             throw new UserNotFoundException("User with id " + userId + " not found");
         }
-    }
-
-    @Override
-    public void updateUser(int userId, User user) {
-        users.put(userId, user);
     }
 
     @Override

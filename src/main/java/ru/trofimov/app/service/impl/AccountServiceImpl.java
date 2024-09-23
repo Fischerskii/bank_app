@@ -11,6 +11,7 @@ import ru.trofimov.app.service.UserService;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,7 +82,7 @@ public class AccountServiceImpl implements AccountService {
             if (sourceAccount.getUserId() != targetAccount.getUserId()) {
                 BigDecimal totalSumWithCommission = sourceAccountTotalSum
                         .multiply(new BigDecimal(String.valueOf(transferCommission)))
-                        .divide(new BigDecimal("100"));
+                        .divide(new BigDecimal("100"), RoundingMode.HALF_UP);
                 sourceAccount.setMoneyAmount(totalSumWithCommission);
             } else {
                 sourceAccount.setMoneyAmount(sourceAccountTotalSum);
