@@ -4,8 +4,8 @@ import java.util.List;
 
 public class User {
     private final int id;
-    private String login;
-    private List<Integer> accountIds;
+    private final String login;
+    private final List<Integer> accountIds;
 
     public User(int id, String login, List<Integer> accountIds) {
         this.id = id;
