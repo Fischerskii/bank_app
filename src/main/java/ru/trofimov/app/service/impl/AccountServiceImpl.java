@@ -6,13 +6,16 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import ru.trofimov.app.entity.Account;
 import ru.trofimov.app.entity.User;
+import ru.trofimov.app.exceptions.UserNotFoundException;
 import ru.trofimov.app.service.AccountService;
 import ru.trofimov.app.service.UserService;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -21,6 +24,9 @@ public class AccountServiceImpl implements AccountService {
     private int lastIndexId;
     private final UserService userService;
     private final Map<Integer, Account> accounts = new HashMap<>();
+
+    @Value("${account.default-amount}")
+    private BigDecimal defaultMoneyAmount;
 
     @Value("${account.transfer-commission}")
     double transferCommission;
@@ -32,7 +38,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public User createAccount(int userId) {
-        Account account = new Account(lastIndexId, userId);
+        Account account = new Account(lastIndexId, userId, defaultMoneyAmount);
         accounts.put(lastIndexId, account);
         userService.addAccountForUser(userId, lastIndexId);
 
@@ -50,6 +56,29 @@ public class AccountServiceImpl implements AccountService {
         }
         accounts.remove(accountId);
         userService.deleteAccountId(accountId);
+    }
+
+    @Override
+    public Account getAccount(int accountId) throws AccountNotFoundException {
+        if (accounts.containsKey(accountId)) {
+            return accounts.get(accountId);
+        } else {
+            throw new AccountNotFoundException("Account with id: " + accountId + " not found");
+        }
+    }
+
+    @Override
+    public List<Account> getAllUserAccounts(int userId) throws UserNotFoundException {
+        User user;
+        List<Account> userAccounts = new ArrayList<>();
+        if (accounts.containsKey(userId)) {
+            user = userService.getUserById(userId);
+        } else {
+            throw new UserNotFoundException("User with id: " + userId + " not found");
+        }
+        List<Integer> accountIds = user.getAccountIds();
+        accountIds.forEach(accountId -> userAccounts.add(accounts.get(accountId)));
+        return userAccounts;
     }
 
     @Override
@@ -80,10 +109,11 @@ public class AccountServiceImpl implements AccountService {
             BigDecimal sourceAccountTotalSum = currentMoneyAmount.subtract(amount);
 
             if (sourceAccount.getUserId() != targetAccount.getUserId()) {
-                BigDecimal totalSumWithCommission = sourceAccountTotalSum
+                BigDecimal commissionSum = amount
                         .multiply(new BigDecimal(String.valueOf(transferCommission)))
                         .divide(new BigDecimal("100"), RoundingMode.HALF_UP);
-                sourceAccount.setMoneyAmount(totalSumWithCommission);
+                sourceAccount.setMoneyAmount(
+                        sourceAccountTotalSum.subtract(commissionSum));
             } else {
                 sourceAccount.setMoneyAmount(sourceAccountTotalSum);
             }

@@ -1,7 +1,5 @@
 package ru.trofimov.app.entity;
 
-import org.springframework.beans.factory.annotation.Value;
-
 import java.math.BigDecimal;
 
 public class Account {
@@ -9,13 +7,10 @@ public class Account {
     private final int userId;
     private BigDecimal moneyAmount;
 
-    @Value("${account.default-amount}")
-    private BigDecimal defaultMoneyAmount;
-
-    public Account(int id, int userId) {
+    public Account(int id, int userId, BigDecimal moneyAmount) {
         this.id = id;
         this.userId = userId;
-        this.moneyAmount = defaultMoneyAmount;
+        this.moneyAmount = moneyAmount;
     }
 
     public int getUserId() {

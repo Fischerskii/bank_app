@@ -22,9 +22,11 @@ public class AccountTransferOperation implements Operation {
     public void execute(Scanner scanner) {
         System.out.println("Enter source account ID: ");
         int sourceAccountId = scanner.nextInt();
+        scanner.nextLine();
 
         System.out.println("Enter target account ID: ");
         int targetAccountId = scanner.nextInt();
+        scanner.nextLine();
 
         System.out.println("Enter amount to transfer: ");
         String amount = scanner.nextLine();
