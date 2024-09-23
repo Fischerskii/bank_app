@@ -9,7 +9,7 @@ import ru.trofimov.app.operations.OperationFactory;
 import java.util.Scanner;
 
 @Component
-public class OperationsConsoleListener {
+public class OperationsConsoleListener implements Runnable {
 
     private final OperationFactory operationFactory;
 
@@ -42,5 +42,15 @@ public class OperationsConsoleListener {
             Operation operation = operationFactory.getOperation(operationType);
             operation.execute(scanner);
         }
+    }
+
+    @Override
+    public void run() {
+        mainMenu();
+    }
+
+    public void startListeningInNewTread() {
+        Thread thread = new Thread(this);
+        thread.start();
     }
 }

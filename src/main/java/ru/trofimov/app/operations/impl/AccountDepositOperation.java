@@ -23,6 +23,7 @@ public class AccountDepositOperation implements Operation {
         System.out.println("Enter account ID: ");
 
         int accountId = scanner.nextInt();
+        scanner.nextLine();
 
         System.out.println("Enter amount to deposit: ");
         String amount = scanner.nextLine();
