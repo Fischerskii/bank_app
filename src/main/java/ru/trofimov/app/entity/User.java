@@ -1,6 +1,5 @@
 package ru.trofimov.app.entity;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class User {
@@ -14,24 +13,12 @@ public class User {
         this.accountIds = accountIds;
     }
 
-    public int getId() {
-        return id;
-    }
-
     public String getLogin() {
         return login;
     }
 
     public List<Integer> getAccountIds() {
         return accountIds;
-    }
-
-    public void setLogin(String login) {
-        this.login = login;
-    }
-
-    public void setAccounts(List<Integer> accountIds) {
-        this.accountIds = accountIds;
     }
 
     @Override

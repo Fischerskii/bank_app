@@ -18,16 +18,6 @@ public class Account {
         this.moneyAmount = defaultMoneyAmount;
     }
 
-    public Account(int id, int userId, BigDecimal moneyAmount) {
-        this.id = id;
-        this.userId = userId;
-        this.moneyAmount = moneyAmount;
-    }
-
-    public int getId() {
-        return id;
-    }
-
     public int getUserId() {
         return userId;
     }
