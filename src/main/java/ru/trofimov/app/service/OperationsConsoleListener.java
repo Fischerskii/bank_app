@@ -39,18 +39,18 @@ public class OperationsConsoleListener implements Runnable {
                 System.out.println("Invalid operation type: " + inputOperationType);
                 continue;
             }
-            Operation operation = operationFactory.getOperation(operationType);
-            operation.execute(scanner);
+
+            try {
+                Operation operation = operationFactory.getOperation(operationType);
+                operation.execute(scanner);
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 
     @Override
     public void run() {
         mainMenu();
-    }
-
-    public void startListeningInNewTread() {
-        Thread thread = new Thread(this);
-        thread.start();
     }
 }

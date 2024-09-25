@@ -18,4 +18,4 @@ public class OperationFactory {
     public Operation getOperation(OperationTypes operationType) {
         return context.getBean(operationType.getOperationClass());
     }
- }
+}

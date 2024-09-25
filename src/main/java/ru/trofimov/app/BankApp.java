@@ -9,6 +9,9 @@ public class BankApp {
         ApplicationContext context = new AnnotationConfigApplicationContext("ru.trofimov.app");
 
         OperationsConsoleListener listener = context.getBean(OperationsConsoleListener.class);
-        listener.startListeningInNewTread();
+
+        Thread thread = new Thread(listener);
+        thread.start();
+
     }
 }

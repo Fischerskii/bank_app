@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 import ru.trofimov.app.operations.Operation;
 import ru.trofimov.app.service.AccountService;
 
-import javax.security.auth.login.AccountNotFoundException;
 import java.util.Scanner;
 
 @Component
@@ -25,11 +24,7 @@ public class AccountCloseOperation implements Operation {
         int accountId = scanner.nextInt();
         scanner.nextLine();
 
-        try {
-            accountService.removeAccount(accountId);
-            System.out.println("Account with ID " + accountId + " has been closed.");
-        } catch (AccountNotFoundException e) {
-            System.out.println(e.getMessage());
-        }
+        accountService.removeAccount(accountId);
+        System.out.println("Account with ID " + accountId + " has been closed.");
     }
 }
