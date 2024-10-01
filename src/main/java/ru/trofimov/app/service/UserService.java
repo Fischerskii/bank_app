@@ -61,10 +61,4 @@ public class UserService {
                     .list();
         }
     }
-
-    public void deleteAccountId(Long accountId) {
-        transactionHelper.executeInTransaction(session -> {
-            session.remove(session.get(Account.class, accountId));
-        });
-    }
 }
