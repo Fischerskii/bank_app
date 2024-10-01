@@ -1,20 +1,46 @@
 package ru.trofimov.app.entity;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
+@Entity
+@Table(name = "user_account")
 public class Account {
-    private final int id;
-    private final int userId;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @Column(name = "money_amount",
+            nullable = false)
     private BigDecimal moneyAmount;
 
-    public Account(int id, int userId, BigDecimal moneyAmount) {
-        this.id = id;
-        this.userId = userId;
+    public Account() {
+    }
+
+    public Account(User user, BigDecimal moneyAmount) {
+        this.user = user;
         this.moneyAmount = moneyAmount;
     }
 
-    public int getUserId() {
-        return userId;
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public BigDecimal getMoneyAmount() {
@@ -29,7 +55,7 @@ public class Account {
     public String toString() {
         return "Account{" +
                 "id=" + id +
-                ", userId=" + userId +
+                ", userId=" + user.getId() +
                 ", moneyAmount=" + moneyAmount +
                 '}';
     }

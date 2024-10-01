@@ -19,10 +19,9 @@ public class UserCreateOperation implements Operation {
     }
 
     @Override
-    public void execute(Scanner scanner) {
+    public void execute(Scanner scanner) throws IllegalArgumentException {
         System.out.println("Enter login for new user: ");
-        User user = userService.createUser(scanner.nextLine());
-
-        System.out.println("User created: " + user);
+            User user = userService.createUser(scanner.nextLine());
+            System.out.println("User created: " + user);
     }
 }

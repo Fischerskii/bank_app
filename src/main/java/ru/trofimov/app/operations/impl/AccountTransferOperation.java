@@ -21,16 +21,18 @@ public class AccountTransferOperation implements Operation {
     @Override
     public void execute(Scanner scanner) {
         System.out.println("Enter source account ID: ");
-        int sourceAccountId = scanner.nextInt();
+        Long sourceAccountId = scanner.nextLong();
         scanner.nextLine();
 
         System.out.println("Enter target account ID: ");
-        int targetAccountId = scanner.nextInt();
+        Long targetAccountId = scanner.nextLong();
         scanner.nextLine();
 
         System.out.println("Enter amount to transfer: ");
         String amount = scanner.nextLine();
 
         accountService.transfer(sourceAccountId, targetAccountId, new BigDecimal(amount));
+        System.out.printf("Amount %s transferred from account ID %d to account ID %d. %n"
+                .formatted(amount, sourceAccountId, targetAccountId));
     }
 }

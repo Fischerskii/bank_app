@@ -23,10 +23,14 @@ public class GetAllUserAccounts implements Operation {
     public void execute(Scanner scanner) {
         System.out.println("Enter userId to get all user accounts: ");
 
-        int userId = scanner.nextInt();
+        Long userId = scanner.nextLong();
         scanner.nextLine();
 
         List<Account> allUserAccounts = accountService.getAllUserAccounts(userId);
+        if (allUserAccounts.isEmpty()) {
+            throw new IllegalArgumentException("User with id %d not found \n"
+                    .formatted(userId));
+        }
         allUserAccounts.forEach(System.out::println);
     }
 }

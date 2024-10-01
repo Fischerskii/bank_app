@@ -6,6 +6,7 @@ import ru.trofimov.app.enums.OperationTypes;
 import ru.trofimov.app.operations.Operation;
 import ru.trofimov.app.operations.OperationFactory;
 
+import java.util.Arrays;
 import java.util.Scanner;
 
 @Component
@@ -23,9 +24,8 @@ public class OperationsConsoleListener implements Runnable {
 
         while (true) {
             System.out.println("Please enter one of operation type:");
-            for (OperationTypes operation : OperationTypes.values()) {
-                System.out.println("-" + operation.name());
-            }
+            Arrays.stream(OperationTypes.values())
+                    .forEach(s -> System.out.println("-" + s));
 
             String inputOperationType = scanner.nextLine().toUpperCase();
             if (inputOperationType.equals("EXIT")) {

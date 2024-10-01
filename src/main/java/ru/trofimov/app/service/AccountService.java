@@ -1,139 +1,119 @@
 package ru.trofimov.app.service;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import ru.trofimov.app.entity.Account;
 import ru.trofimov.app.entity.User;
+import ru.trofimov.app.helper.TransactionHelper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
-@Component
+@Service
 public class AccountService {
 
-    private int lastIndexId;
+    private final TransactionHelper transactionHelper;
+    private final SessionFactory sessionFactory;
     private final UserService userService;
-    private final Map<Integer, Account> accounts = new HashMap<>();
-
-    @Value("${account.default-amount}")
-    private BigDecimal defaultMoneyAmount;
-
-    @Value("${account.transfer-commission}")
-    double transferCommission;
+    private final AccountProperties accountProperties;
 
     @Autowired
-    public AccountService(@Lazy UserService userService) {
+    public AccountService(TransactionHelper transactionHelper,
+                          SessionFactory sessionFactory,
+                          UserService userService,
+                          AccountProperties accountProperties) {
+        this.transactionHelper = transactionHelper;
+        this.sessionFactory = sessionFactory;
         this.userService = userService;
+        this.accountProperties = accountProperties;
     }
 
-    public User createAccount(int userId) {
-        Account account = new Account(lastIndexId, userId, defaultMoneyAmount);
-        accounts.put(lastIndexId, account);
-        userService.addAccountForUser(userId, lastIndexId);
-
-        User user = userService.getUserById(userId);
-        lastIndexId++;
-        return user;
+    public User createAccount(Long userId) {
+        return transactionHelper.executeInTransaction(session -> {
+            User user = userService.getUserById(userId);
+            Account account = new Account(user, accountProperties.getDefaultMoneyAmount());
+            session.persist(account);
+            return user;
+        });
     }
 
-    public void removeAccount(int accountId) throws IllegalArgumentException {
-        if (accounts.containsKey(accountId)) {
-            accounts.remove(accountId);
-        } else {
-            throw new IllegalArgumentException("Account with id: " + accountId + " not found");
-        }
-        accounts.remove(accountId);
-        userService.deleteAccountId(accountId);
+    public void removeAccount(Long accountId) {
+        transactionHelper.executeInTransaction(session -> {
+            Account account = session.get(Account.class, accountId);
+            session.remove(account);
+        });
     }
 
-    public Account getAccount(int accountId) {
-        if (accounts.containsKey(accountId)) {
-            return accounts.get(accountId);
-        } else {
-            throw new IllegalArgumentException("Account with id: " + accountId + " not found");
+    public Optional<Account> getAccount(Long accountId) {
+        try (Session session = sessionFactory.openSession()) {
+            return Optional.ofNullable(session.get(Account.class, accountId));
         }
     }
 
-    public List<Account> getAllUserAccounts(int userId) throws IllegalArgumentException{
-        User user;
-        List<Account> userAccounts = new ArrayList<>();
-        if (accounts.containsKey(userId)) {
-            user = userService.getUserById(userId);
-        } else {
-            throw new IllegalArgumentException("User with id: " + userId + " not found");
-        }
-        List<Integer> accountIds = user.getAccountIds();
-        accountIds.forEach(accountId -> userAccounts.add(accounts.get(accountId)));
-        return userAccounts;
-    }
-
-    public void deposit(int accountId, BigDecimal amount) throws IllegalArgumentException {
-        if (amount.compareTo(new BigDecimal("0")) <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
-        }
-
-        if (accounts.containsKey(accountId)) {
-            Account account = accounts.get(accountId);
-            BigDecimal currentMoneyAmount = account.getMoneyAmount();
-            account.setMoneyAmount(currentMoneyAmount.add(amount));
+    public List<Account> getAllUserAccounts(Long userId) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.createQuery("SELECT a FROM Account a WHERE a.user.id = :userId", Account.class)
+                    .setParameter("userId", userId)
+                    .list();
         }
     }
 
-    public void transfer(int sourceAccountId, int targetAccountId, BigDecimal amount) throws IllegalArgumentException {
-        if (amount.compareTo(new BigDecimal("0")) <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
-        }
-        Account sourceAccount = accounts.get(sourceAccountId);
-        BigDecimal currentMoneyAmount = sourceAccount.getMoneyAmount();
+    public void deposit(Long accountId, BigDecimal amount) {
+        transactionHelper.executeInTransaction(session -> {
+            Account account = getAccount(accountId)
+                    .orElseThrow(() -> new IllegalArgumentException("Account with id %d not found"
+                            .formatted(accountId)));
+            account.setMoneyAmount(account.getMoneyAmount().add(amount));
+            session.merge(account);
+        });
+    }
 
-        if (currentMoneyAmount.compareTo(amount) < 0) {
-            throw new IllegalArgumentException("Amount must be less or equal than source account sum. " +
-                    "Source account sum = " + currentMoneyAmount);
-        }
+    public void transfer(Long sourceAccountId, Long targetAccountId, BigDecimal amount) throws IllegalArgumentException {
+        transactionHelper.executeInTransaction(session -> {
+            Account sourceAccount = getAccount(sourceAccountId).
+                    orElseThrow(() -> new IllegalArgumentException("Account with id %d not found"
+                            .formatted(sourceAccountId)));
+            Account targetAccount = getAccount(targetAccountId)
+                    .orElseThrow(() -> new IllegalArgumentException("Account with id %d not found"
+                            .formatted(targetAccountId)));
 
-        if (accounts.containsKey(sourceAccountId) && accounts.containsKey(targetAccountId)) {
-            Account targetAccount = accounts.get(targetAccountId);
-            BigDecimal targetMoneyAmount = targetAccount.getMoneyAmount();
+            if (sourceAccount.getMoneyAmount().compareTo(amount) < 0) {
+                throw new IllegalArgumentException("Amount must be greater than 0");
+            }
 
-            BigDecimal sourceAccountTotalSum = currentMoneyAmount.subtract(amount);
+            sourceAccount.setMoneyAmount(sourceAccount.getMoneyAmount().subtract(amount));
+            targetAccount.setMoneyAmount(targetAccount.getMoneyAmount().add(amount));
 
-            if (sourceAccount.getUserId() != targetAccount.getUserId()) {
+            if (sourceAccount.getUser() != targetAccount.getUser()) {
                 BigDecimal commissionSum = amount
-                        .multiply(new BigDecimal(String.valueOf(transferCommission)))
+                        .multiply(new BigDecimal(String.valueOf(accountProperties.getTransferCommission())))
                         .divide(new BigDecimal("100"), RoundingMode.HALF_UP);
-                sourceAccount.setMoneyAmount(
-                        sourceAccountTotalSum.subtract(commissionSum));
-            } else {
-                sourceAccount.setMoneyAmount(sourceAccountTotalSum);
+                sourceAccount.setMoneyAmount(sourceAccount.getMoneyAmount().subtract(commissionSum));
             }
 
-            targetAccount.setMoneyAmount(targetMoneyAmount.add(amount));
-        }
+            session.merge(sourceAccount);
+            session.merge(targetAccount);
+        });
     }
 
-    public void withdraw(int accountId, BigDecimal amount) throws IllegalArgumentException {
-        if (amount.compareTo(new BigDecimal("0")) <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
-        }
-
-        if (accounts.containsKey(accountId)) {
-            Account account = accounts.get(accountId);
-            BigDecimal currentMoneyAmount = account.getMoneyAmount();
-
-            BigDecimal totalSum = currentMoneyAmount.subtract(amount);
-
-            if (totalSum.compareTo(new BigDecimal("0")) < 0) {
-                throw new IllegalArgumentException("Error: insufficient funds in the account with id: "
-                        + accountId + ". " + "Available amount for write-off: " + currentMoneyAmount);
-            } else {
-                account.setMoneyAmount(currentMoneyAmount.subtract(amount));
+    public void withdraw(Long accountId, BigDecimal amount) throws IllegalArgumentException {
+        transactionHelper.executeInTransaction(session -> {
+            Account account = getAccount(accountId)
+                    .orElseThrow(() -> new IllegalArgumentException("Account with id %d not found"
+                            .formatted(accountId)));
+            BigDecimal moneyAmount = account.getMoneyAmount();
+            if (moneyAmount.compareTo(amount) < 0) {
+                throw new IllegalArgumentException("Error executing command ACCOUNT_WITHDRAW: error=No such money to withdraw\n" +
+                        "/from account: id=%d, moneyAmount=%s, attemptedWithdraw=%s"
+                                .formatted(accountId, moneyAmount, amount));
             }
-        }
+
+            account.setMoneyAmount(account.getMoneyAmount().subtract(amount));
+            session.merge(account);
+        });
     }
 }

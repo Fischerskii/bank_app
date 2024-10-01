@@ -22,12 +22,13 @@ public class AccountDepositOperation implements Operation {
     public void execute(Scanner scanner) {
         System.out.println("Enter account ID: ");
 
-        int accountId = scanner.nextInt();
+        Long accountId = scanner.nextLong();
         scanner.nextLine();
 
         System.out.println("Enter amount to deposit: ");
         String amount = scanner.nextLine();
 
         accountService.deposit(accountId, new BigDecimal(amount));
+        System.out.printf("Amount %s deposited to account ID: %d \n", amount, accountId);
     }
 }
