@@ -21,10 +21,13 @@ public class GetAccountOperation implements Operation {
     @Override
     public void execute(Scanner scanner) {
         System.out.println("Enter account ID to get account information: ");
-        int accountId = scanner.nextInt();
+        Long accountId = scanner.nextLong();
         scanner.nextLine();
 
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new IllegalArgumentException("Account with id %d not found"
+                        .formatted(accountId)));
+
         System.out.println("Account information: " + account);
     }
 }

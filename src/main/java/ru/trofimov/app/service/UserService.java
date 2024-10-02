@@ -1,58 +1,66 @@
 package ru.trofimov.app.service;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import ru.trofimov.app.entity.Account;
 import ru.trofimov.app.entity.User;
+import ru.trofimov.app.helper.TransactionHelper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-@Component
+@Service
 public class UserService {
-
-    private final Map<Integer, User> users = new HashMap<>();
-    private int lastUserId;
+    private final TransactionHelper transactionHelper;
+    private final SessionFactory sessionFactory;
     private final AccountService accountService;
 
     @Autowired
-    public UserService(AccountService accountService) {
+    public UserService(TransactionHelper transactionHelper,
+                       SessionFactory sessionFactory,
+                       @Lazy AccountService accountService) {
+        this.transactionHelper = transactionHelper;
+        this.sessionFactory = sessionFactory;
         this.accountService = accountService;
     }
 
-    public User createUser(String login) {
-        for(User user : users.values()) {
-            if(user.getLogin().equals(login)) {
-                throw new IllegalArgumentException("User with login " + login + " already exists");
-            }
-        }
+    public User createUser(String login) throws IllegalArgumentException {
+        return transactionHelper.executeInTransaction(session -> {
 
-        List<Integer> accountIds = new ArrayList<>();
-        User user = new User(lastUserId, login, accountIds);
-        users.put(lastUserId, user);
-        accountService.createAccount(lastUserId);
-        lastUserId++;
-        return user;
+            Boolean userExists = session.createQuery("SELECT count(u) > 0 FROM User u WHERE u.login = :login", Boolean.class)
+                    .setParameter("login", login)
+                    .getSingleResult();
+
+            if (userExists) {
+                throw new IllegalArgumentException("User with login " + login + " already exists. " +
+                        "Please enter another login.");
+            }
+
+            User newUser = new User(login, new ArrayList<>());
+            session.persist(newUser);
+
+            Account account = accountService.createAccountForNewUser(newUser, session);
+            newUser.getAccounts().add(account);
+
+            session.persist(newUser);
+            return newUser;
+        });
     }
 
-    public User getUserById(int userId) {
-        if (users.containsKey(userId)) {
-            return users.get(userId);
-        } else {
-            throw new IllegalArgumentException("User with id " + userId + " not found");
+    public User getUserById(Long userId) {
+        try (Session session = sessionFactory.openSession()) {
+            return session.get(User.class, userId);
         }
     }
 
     public List<User> getAllUsers() {
-        return new ArrayList<>(users.values());
-    }
-
-    public void addAccountForUser(int userId, int accountId) {
-        users.get(userId).getAccountIds().add(accountId);
-    }
-
-    public void deleteAccountId(int accountId) {
-        users.values().forEach(u -> u.getAccountIds().remove(accountId));
+        try (Session session = sessionFactory.openSession()) {
+            return session
+                    .createQuery("SELECT u FROM User u LEFT JOIN FETCH u.accounts ", User.class)
+                    .list();
+        }
     }
 }

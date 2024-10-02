@@ -21,7 +21,7 @@ public class AccountCloseOperation implements Operation {
     public void execute(Scanner scanner) {
         System.out.println("Enter account ID to close:");
 
-        int accountId = scanner.nextInt();
+        Long accountId = scanner.nextLong();
         scanner.nextLine();
 
         accountService.removeAccount(accountId);

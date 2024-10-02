@@ -21,12 +21,13 @@ public class AccountWithdrawOperation implements Operation {
     @Override
     public void execute(Scanner scanner) {
         System.out.println("Enter account ID to withdraw from: ");
-        int accountId = scanner.nextInt();
+        Long accountId = scanner.nextLong();
         scanner.nextLine();
 
         System.out.println("Enter amount to withdraw: ");
         String amount = scanner.nextLine();
 
         accountService.withdraw(accountId, new BigDecimal(amount));
+        System.out.printf("%s was successfully written off from account %d %n", amount, accountId);
     }
 }
