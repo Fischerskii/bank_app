@@ -2,7 +2,7 @@ package ru.trofimov.app.operations.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import ru.trofimov.app.entity.User;
+import ru.trofimov.app.entity.Account;
 import ru.trofimov.app.operations.Operation;
 import ru.trofimov.app.service.AccountService;
 
@@ -24,7 +24,7 @@ public class AccountCreateOperation implements Operation {
 
         Long userId = scanner.nextLong();
         scanner.nextLine();
-        User user = accountService.createAccount(userId);
-        System.out.println("New account created with ID: " + userId + " for user: " + user.getLogin());
+        Account account = accountService.createAccount(userId);
+        System.out.println("New account created with ID: " + userId + " for user: " + account.getUser().getLogin());
     }
 }

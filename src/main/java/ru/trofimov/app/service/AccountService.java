@@ -32,13 +32,19 @@ public class AccountService {
         this.accountProperties = accountProperties;
     }
 
-    public User createAccount(Long userId) {
+    public Account createAccount(Long userId) {
         return transactionHelper.executeInTransaction(session -> {
             User user = userService.getUserById(userId);
             Account account = new Account(user, accountProperties.getDefaultMoneyAmount());
             session.persist(account);
-            return user;
+            return account;
         });
+    }
+
+    public Account createAccountForNewUser(User user, Session session) {
+        Account account = new Account(user, accountProperties.getDefaultMoneyAmount());
+        session.persist(account);
+        return account;
     }
 
     public void removeAccount(Long accountId) {

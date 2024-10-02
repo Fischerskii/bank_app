@@ -3,6 +3,7 @@ package ru.trofimov.app.service;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import ru.trofimov.app.entity.Account;
 import ru.trofimov.app.entity.User;
@@ -15,13 +16,15 @@ import java.util.List;
 public class UserService {
     private final TransactionHelper transactionHelper;
     private final SessionFactory sessionFactory;
-    private final AccountProperties accountProperties;
+    private final AccountService accountService;
 
     @Autowired
-    public UserService(TransactionHelper transactionHelper, SessionFactory sessionFactory, AccountProperties accountProperties) {
+    public UserService(TransactionHelper transactionHelper,
+                       SessionFactory sessionFactory,
+                       @Lazy AccountService accountService) {
         this.transactionHelper = transactionHelper;
         this.sessionFactory = sessionFactory;
-        this.accountProperties = accountProperties;
+        this.accountService = accountService;
     }
 
     public User createUser(String login) throws IllegalArgumentException {
@@ -38,12 +41,11 @@ public class UserService {
 
             User newUser = new User(login, new ArrayList<>());
             session.persist(newUser);
-            session.flush();
 
-            Account account = new Account(newUser, accountProperties.getDefaultMoneyAmount());
+            Account account = accountService.createAccountForNewUser(newUser, session);
             newUser.getAccounts().add(account);
-            session.persist(account);
 
+            session.persist(newUser);
             return newUser;
         });
     }
